@@ -14,8 +14,7 @@ class PreProcessor():
     # Load Brent oil prices data from the CSV file.
     def load_data(self):
         self.df = pd.read_csv(self.data_path, parse_dates = ['Date'], dayfirst = True)
-        self.date.columns = self.date.columns.str.strip()
-        self.date.sort_values('Date', inplace = True)
+        self.df.columns = self.df.columns.str.strip()
+        self.df.sort_values('Date', inplace = True)
         logging.info("Data loaded and sorted by date")
-        return self.data
-
+        return self.df
