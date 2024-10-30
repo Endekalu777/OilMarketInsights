@@ -2,6 +2,8 @@ import pandas as pd
 import logging
 from IPython.display import display
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 # Create logs directory if it doesn't exist
 if not os.path.exists('../logs'):
