@@ -86,4 +86,21 @@ class EDAEventAnalysis():
             # Add event label text
             ax.text(closest_date, event_price, f' {event_name}', color='black', fontsize=8, verticalalignment='bottom')
 
+        # Customize plot appearance
+        ax.set_title("Brent Oil Prices with Event Markers", fontsize=16)
+        ax.set_xlabel("Date", fontsize=14)
+        ax.set_ylabel("Price (USD per barrel)", fontsize=14)
+        ax.legend(["Brent Oil Price"], loc="upper left", fontsize=10)
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Set x-axis major ticks every 5 years, with minor ticks every year
+        ax.xaxis.set_major_locator(mdates.YearLocator(5))
+        ax.xaxis.set_minor_locator(mdates.YearLocator(1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        plt.xticks(rotation=45)
+
+        # Display the plot
+        plt.tight_layout()
+        plt.show()
+
         
