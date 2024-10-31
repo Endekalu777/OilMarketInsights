@@ -64,5 +64,26 @@ class EDAEventAnalysis():
             "2020-03-11": "COVID-19 Pandemic",
             "2022-02-24": "Russia Invasion of Ukraine",
         }
+        # Initialize plot
+        fig, ax = plt.subplots(figsize=(15, 7))
+
+        # Plot the trend line with a thicker width for visibility
+        ax.plot(self.df['Date'], self.df['Price'], label='Brent Oil Price', color='steelblue', linewidth=1.5)
+
+        # Add event markers with vertical lines and labeled points
+        for event_date_str, event_name in events.items():
+            event_date = pd.to_datetime(event_date_str)
+            
+            # Find the closest date in the data to the event date
+            closest_date_idx = (self.df['Date'] - event_date).abs().idxmin()
+            closest_date = self.df.loc[closest_date_idx, 'Date']
+            event_price = self.df.loc[closest_date_idx, 'Price']
+
+            # Add a vertical line and marker at the closest date
+            ax.axvline(closest_date, color='red', linestyle='--', linewidth=1)
+            ax.plot(closest_date, event_price, 'ro')  
+
+            # Add event label text
+            ax.text(closest_date, event_price, f' {event_name}', color='black', fontsize=8, verticalalignment='bottom')
 
         
