@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from matplotlib.dates import mdates
+import matplotlib.dates as mdates
 import pandas as pd
-from IPyton.display import display
+from IPython.display import display
 
 class EDAEventAnalysis():
     def __init__(self, filepath):
@@ -46,3 +46,23 @@ class EDAEventAnalysis():
         display("Data Summary:")
         display(self.df['Price'].describe())
 
+    def event_analysis(self):
+        # Event dictionary with significant events
+        events = {
+            "1989-11-09": "Fall of Berlin Wall",
+            "1990-08-02": "Gulf War begins",
+            "1991-02-28": "Gulf War ends",
+            "1991-12-24": "End of the Soviet Union",
+            "1997-07-02": "Asian Financial Crisis",
+            "2001-09-11": "9/11 Attack",
+            "2003-03-20": "US Invasion of Iraq",
+            "2006-07-12": "Israeli-Lebanese Conflict",
+            "2007-12-01": "The Great Recession",
+            "2010-12-17": "The Arab Uprising",
+            "2011-02-15": "Libya Civil War",
+            "2018-08-06": "US Sanctions on Iran",
+            "2020-03-11": "COVID-19 Pandemic",
+            "2022-02-24": "Russia Invasion of Ukraine",
+        }
+
+        
