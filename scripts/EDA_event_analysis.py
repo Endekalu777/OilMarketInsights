@@ -7,8 +7,10 @@ class EDAEventAnalysis():
     def __init__(self, filepath):
         self.df = pd.read_csv(filepath)
         self.df = pd.read_csv(filepath)
+
         # Convert 'Date' column to datetime format if not already
         self.df['Date'] = pd.to_datetime(self.df['Date'])
+
         # Sort by Date to ensure correct order
         self.df = self.df.sort_values(by='Date')
 
@@ -47,6 +49,7 @@ class EDAEventAnalysis():
         display(self.df['Price'].describe())
 
     def event_analysis(self):
+
         # Event dictionary with significant events
         events = {
             "1989-11-09": "Fall of Berlin Wall",
@@ -64,6 +67,7 @@ class EDAEventAnalysis():
             "2020-03-11": "COVID-19 Pandemic",
             "2022-02-24": "Russia Invasion of Ukraine",
         }
+        
         # Initialize plot
         fig, ax = plt.subplots(figsize=(15, 7))
 
