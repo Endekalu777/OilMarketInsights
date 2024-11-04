@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.tsa.api import VAR
 from datetime import datetime
+from IPython.display import display
 
 
 class OilPriceAnalysis:
@@ -78,5 +79,5 @@ class OilPriceAnalysis:
         # Forecasting future data
         forecast = fitted_model.forecast(model_data_diff.values[-2:], steps=5)
         forecast_df = pd.DataFrame(forecast, columns=['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate'])
-        print(forecast_df)
+        display(forecast_df.head())
 
