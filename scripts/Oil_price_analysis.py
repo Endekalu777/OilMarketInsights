@@ -80,7 +80,3 @@ class OilPriceAnalysis:
         forecast_df = pd.DataFrame(forecast, columns=['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate'])
         print(forecast_df)
 
-    def run_analysis(self):
-        self.preprocess_data()
-        self.plot_data()
-        self.fit_var_model()
