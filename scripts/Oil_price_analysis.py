@@ -49,17 +49,17 @@ class OilPriceAnalysis:
 
         plt.subplot(2, 2, 2)
         plt.plot(self.data['Year'], self.data['Inflation Rate'], label='Inflation Rate', color='orange')
-        plt.title('Inflation Rate (USA)')
+        plt.title('Inflation Rate')
         plt.grid(True)
 
         plt.subplot(2, 2, 3)
-        plt.plot(self.data['Year'], self.data['GDP'], label='GDP (USA)', color='green')
-        plt.title('GDP (USA)')
+        plt.plot(self.data['Year'], self.data['GDP'], label='GDP', color='green')
+        plt.title('GDP')
         plt.grid(True)
 
         plt.subplot(2, 2, 4)
         plt.plot(self.data['Year'], self.data['Unemployment Rate'], label='Unemployment Rate', color='red')
-        plt.title('Unemployment Rate (USA)')
+        plt.title('Unemployment Rate')
         plt.grid(True)
 
         plt.tight_layout()
