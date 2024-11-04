@@ -52,3 +52,8 @@ class OilPriceAnalysis:
         forecast = fitted_model.forecast(model_data_diff.values[-2:], steps=5)
         forecast_df = pd.DataFrame(forecast, columns=['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate'])
         print(forecast_df)
+
+    def run_analysis(self):
+        self.preprocess_data()
+        self.plot_data()
+        self.fit_var_model()
