@@ -1,4 +1,9 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from statsmodels.tsa.api import VAR
+from datetime import datetime
+
 
 class OilPriceAnalysis:
     def __init__(self, oil_prices_file, inflation_file, gdp_file, unemployment_file):
@@ -31,3 +36,19 @@ class OilPriceAnalysis:
 
         # Drop NA values in case there are missing rows
         self.data.dropna(inplace=True)
+
+    def fit_var_model(self):
+        # Fit a VAR model
+        model_data = self.data[['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate']]
+
+        # Difference the data to make it stationary
+        model_data_diff = model_data.diff().dropna()
+
+        model = VAR(model_data_diff)
+        fitted_model = model.fit(2) # Use lag 2 for simplicity, can tune this
+        print(fitted_model.summary())
+
+        # Forecasting future data
+        forecast = fitted_model.forecast(model_data_diff.values[-2:], steps=5)
+        forecast_df = pd.DataFrame(forecast, columns=['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate'])
+        print(forecast_df)
