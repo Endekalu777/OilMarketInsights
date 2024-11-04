@@ -37,6 +37,33 @@ class OilPriceAnalysis:
         # Drop NA values in case there are missing rows
         self.data.dropna(inplace=True)
 
+    def plot_data(self):
+        # Visualize the data
+        plt.figure(figsize=(12, 8))
+
+        plt.subplot(2, 2, 1)
+        plt.plot(self.data['Year'], self.data['Price'], label='Brent Oil Price', color='blue')
+        plt.title('Brent Oil Price')
+        plt.grid(True)
+
+        plt.subplot(2, 2, 2)
+        plt.plot(self.data['Year'], self.data['Inflation Rate'], label='Inflation Rate', color='orange')
+        plt.title('Inflation Rate (USA)')
+        plt.grid(True)
+
+        plt.subplot(2, 2, 3)
+        plt.plot(self.data['Year'], self.data['GDP'], label='GDP (USA)', color='green')
+        plt.title('GDP (USA)')
+        plt.grid(True)
+
+        plt.subplot(2, 2, 4)
+        plt.plot(self.data['Year'], self.data['Unemployment Rate'], label='Unemployment Rate', color='red')
+        plt.title('Unemployment Rate (USA)')
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.show()
+
     def fit_var_model(self):
         # Fit a VAR model
         model_data = self.data[['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate']]
