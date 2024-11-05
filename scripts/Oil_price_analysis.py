@@ -86,4 +86,84 @@ class OilPriceAnalysis:
         fitted_model = model.fit()
         print(fitted_model.summary())
 
+    def fit_lstm_model(self):
+        try:
+            # Normalize data
+            data = self.data[['Price', 'Inflation Rate', 'GDP', 'Unemployment Rate']].values
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            scaled_data = scaler.fit_transform(data)
+
+            # Reduce lookback period based on data size
+            lookback = min(12, len(scaled_data) // 4)  # Adjust lookback period dynamically
+            
+            # Check if we have enough data
+            if len(scaled_data) < lookback + 1:
+                print(f"Not enough data points. Need at least {lookback + 1} points, but got {len(scaled_data)}")
+                return
+
+            # Prepare training data for LSTM
+            X, y = [], []
+            for i in range(lookback, len(scaled_data)):
+                X.append(scaled_data[i-lookback:i])
+                y.append(scaled_data[i, 0])  # Predicting oil price (Price)
+
+            X, y = np.array(X), np.array(y)
+            
+            # Check if we have any samples
+            if len(X) == 0 or len(y) == 0:
+                print("No samples could be created with the current lookback period")
+                return
+
+            # Split data into training and test sets
+            split_idx = max(1, int(0.8 * len(X)))  # Ensure at least 1 training sample
+            X_train, X_test = X[:split_idx], X[split_idx:]
+            y_train, y_test = y[:split_idx], y[split_idx:]
+
+            # Check if we have enough data for training and testing
+            if len(X_train) < 1 or len(X_test) < 1:
+                print("Not enough data for training and testing split")
+                return
+
+            # Build LSTM model
+            model = Sequential()
+            model.add(LSTM(units=32, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
+            model.add(LSTM(units=32))
+            model.add(Dense(1))
+
+            model.compile(optimizer='adam', loss='mean_squared_error')
+            
+            # Adjust batch size based on data size
+            batch_size = min(32, len(X_train))
+            model.fit(X_train, y_train, epochs=10, batch_size=batch_size, verbose=1)
+
+            # Predict on test set
+            predicted_oil_price = model.predict(X_test)
+            
+            # Reshape predictions and actual values for inverse transformation
+            predicted_oil_price_padded = np.concatenate((predicted_oil_price, np.zeros((predicted_oil_price.shape[0], 3))), axis=1)
+            predicted_oil_price = scaler.inverse_transform(predicted_oil_price_padded)[:, 0]
+
+            y_test_padded = np.concatenate((y_test.reshape(-1, 1), np.zeros((y_test.shape[0], 3))), axis=1)
+            y_test_rescaled = scaler.inverse_transform(y_test_padded)[:, 0]
+
+            # Calculate Mean Squared Error (MSE)
+            mse = mean_squared_error(y_test_rescaled, predicted_oil_price)
+            print(f"Mean Squared Error (MSE): {mse}")
+
+            # Plot actual vs predicted prices
+            plt.figure(figsize=(10, 6))
+            plt.plot(y_test_rescaled, label='Actual Oil Price')
+            plt.plot(predicted_oil_price, label='Predicted Oil Price')
+            plt.title('LSTM Model - Actual vs Predicted Oil Prices')
+            plt.xlabel('Time Steps')
+            plt.ylabel('Oil Price')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            print(f"Data shape: {data.shape}")
+            print(f"Scaled data shape: {scaled_data.shape}")
+
     
