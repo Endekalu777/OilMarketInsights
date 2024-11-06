@@ -15,3 +15,23 @@ analysis = OilPriceAnalysis(
     'data/unemployment_rate/United_States_Unemployment_Rate.csv'
 )
 analysis.preprocess_data()
+
+@app.route('/api/price-data', methods=['GET'])
+def get_price_data():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    try:
+        data = analysis.get_filtered_price_data("1987", "2022")
+        return jsonify({
+            'success': True,
+            'data': data.to_dict(orient='records')
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+if __name__ == '__main__':
+    app.run(debug=True) 

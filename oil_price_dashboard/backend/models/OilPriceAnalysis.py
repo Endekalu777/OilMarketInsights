@@ -38,6 +38,55 @@ class OilPriceAnalysis:
 
         # Handle missing data
         self.data.dropna(inplace=True)
+        
+    def get_filtered_price_data(self, start_date, end_date):
+        mask = (self.oil_prices['Date'] >= start_date) & (self.oil_prices['Date'] <= end_date)
+        return self.oil_prices[mask]
+
+    def calculate_metrics(self):
+        # Calculate key performance indicators
+        latest_price = self.oil_prices['Price'].iloc[-1]
+        avg_price = self.oil_prices['Price'].mean()
+        price_volatility = self.oil_prices['Price'].std()
+        
+        # Calculate price changes
+        self.oil_prices['Price_Change'] = self.oil_prices['Price'].pct_change()
+        avg_price_change = self.oil_prices['Price_Change'].mean() * 100
+        
+        return {
+            'latest_price': float(latest_price),
+            'average_price': float(avg_price),
+            'volatility': float(price_volatility),
+            'average_price_change': float(avg_price_change),
+            'inflation_correlation': float(self.data['Price'].corr(self.data['Inflation Rate'])),
+            'gdp_correlation': float(self.data['Price'].corr(self.data['GDP'])),
+            'unemployment_correlation': float(self.data['Price'].corr(self.data['Unemployment Rate']))
+        }
+
+    def get_significant_events(self):
+        # Identify significant price changes
+        threshold = self.oil_prices['Price'].std() * 2
+        significant_changes = self.oil_prices[abs(self.oil_prices['Price'].diff()) > threshold]
+        
+        events = []
+        for idx, row in significant_changes.iterrows():
+            events.append({
+                'date': row['Date'].strftime('%Y-%m-%d'),
+                'price': float(row['Price']),
+                'change': float(row['Price'] - self.oil_prices.loc[idx-1, 'Price'])
+            })
+        return events
+
+    def get_price_forecast(self):
+        # Fit LSTM model and get predictions
+        self.fit_lstm_model()
+        # Return last 30 actual prices and next 12 predicted prices
+        actual_prices = self.oil_prices.tail(30)[['Date', 'Price']].to_dict('records')
+        return {
+            'actual': actual_prices,
+            'forecast': self.predicted_prices if hasattr(self, 'predicted_prices') else []
+        }
+    
 
     def plot_data(self):
         # Plot multiple economic indicators alongside oil prices
@@ -165,4 +214,6 @@ class OilPriceAnalysis:
             print(f"An error occurred: {str(e)}")
             print(f"Data shape: {data.shape}")
             print(f"Scaled data shape: {scaled_data.shape}")
+
+    
 
