@@ -3,6 +3,9 @@ import logging
 from IPython.display import display
 import os
 import warnings
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.ticker as mticker
 warnings.filterwarnings("ignore")
 
 # Create logs directory if it doesn't exist
@@ -33,7 +36,30 @@ class PreProcessor():
         except Exception as e:
             logging.error(f"Error loading data: {str(e)}")
             raise
+
+    def detect_outliers(self):
+        if 'Price' in self.df.columns:
+            plt.figure(figsize=(12, 6))  # Increase figure size
+            sns.boxplot(x=self.df['Price'])
+            
+            # Adjust x-axis for better readability
+            plt.gca().xaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+            
+            # Set x-axis ticks if necessary
+            plt.gca().xaxis.set_major_locator(mticker.MaxNLocator(nbins=10)) 
+            
+            plt.title("Boxplot of Price for Outlier Detection")
+            plt.xlabel("Price") 
+            plt.xticks(rotation=45)  
+            plt.grid(True) 
+            plt.show()
     
     # Handle missing values and perform initial data cleaning.
     def pre_process_data(self):
+        display(self.df.describe())
+        display(self.df.info())
         display(self.df.isnull().sum())
+
+        self.detect_outliers()
+
+    
