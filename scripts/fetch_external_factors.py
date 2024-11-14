@@ -1,24 +1,22 @@
-import wbdata
 import pandas as pd
+import wbdata
 import datetime
 import os
 import logging
 from typing import Dict, Optional
+import warnings
+warnings.filterwarnings("ignore")
 
 # Create logs directory if it doesn't exist
-if not os.path.exists('../logs'):
-    os.makedirs('../logs')
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(level=logging.INFO,
-                    handlers = [logging.FileHandler('../logs/fetch_external_factors.log')],
+                    handlers=[logging.FileHandler('logs/fetch_external_factors.log')],
                     format='%(asctime)s:%(levelname)s:%(message)s')
 
 # Define global variables
-# Start and end date for filtering data
 START_DATE = datetime.datetime(1987, 5, 20)
 END_DATE = datetime.datetime(2022, 9, 30)
-# List of country codes to fetch data for
 COUNTRIES = ['USA', 'SAU', 'RUS', 'IRN', 'CHN', 'ARE', 'IRQ', 'KWT', 'EUU']
-# Dictionary mapping indicator codes to descriptive names
 INDICATORS = {
     'NY.GDP.MKTP.CD': 'GDP Growth (%)',
     'FP.CPI.TOTL': 'Inflation Rate (%)',
@@ -30,48 +28,66 @@ INDICATORS = {
     'EG.ELC.NGAS.ZS': 'Natural Gas Electricity Production (%)'
 }
 
-# Function to fetch data for a single indicator
 def fetch_indicator_data(indicator_code: str, indicator_name: str) -> Optional[pd.DataFrame]:
+    """Fetch data for a specific indicator from World Bank."""
     try:
-        # Fetch data for the specified indicator and countries
         data = wbdata.get_dataframe({indicator_code: indicator_name}, country=COUNTRIES)
-        # Check if data is returned and filter by date range
         if data is not None and not data.empty:
             data.reset_index(inplace=True)
             data['date'] = pd.to_datetime(data['date'])
-            data = data[(data['date'] >= START_DATE) & (data['date'] <= END_DATE)]
-            logging.info(f"Successfully fetched {indicator_name} data")
-            return data
+            # Handling missing values here: forward fill followed by backward fill
+            data.fillna(method='bfill', inplace=True)  # Backward fill
+            logging.info(f"Successfully fetched {indicator_name} data with shape {data.shape}")
+            return data[(data['date'] >= START_DATE) & (data['date'] <= END_DATE)]
         else:
             logging.warning(f"No data returned for {indicator_name}")
             return None
     except Exception as e:
-        # Log any errors encountered during data fetching
         logging.error(f"Error fetching {indicator_name}: {str(e)}")
         return None
 
-# Function to save fetched data to a CSV file
-def save_to_csv(data: pd.DataFrame, filename: str) -> None:
+def merge_indicators(indicator_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Merge all indicator dataframes, handling missing values professionally."""
     try:
-        # Save data to a CSV file with the provided filename
-        data.to_csv(f"data/external_factors/{filename}.csv", index=False)
-        logging.info(f"Data saved to data/external_factors/{filename}.csv")
+        merged_df = None
+        for name, df in indicator_data.items():
+            if df is not None:
+                if merged_df is None:
+                    merged_df = df
+                else:
+                    merged_df = pd.merge(merged_df, df, on=['date', 'country'], how='outer')
+
+        if merged_df is not None:
+            merged_df = merged_df.sort_values(['country', 'date'])
+            # Handling missing values in merged data: forward fill, then backward fill, and then interpolation
+            merged_df.fillna(method='ffill', inplace=True)  # Forward fill
+            merged_df.fillna(method='bfill', inplace=True)  # Backward fill
+            merged_df.interpolate(method='linear', inplace=True)  # Linear interpolation for continuous data
+            # Alternatively, you could fill with the mean/median or zero for certain columns if appropriate
+            logging.info(f"Successfully merged all indicators with final shape {merged_df.shape}")
+            return merged_df
+        else:
+            logging.warning("No data to merge")
+            return pd.DataFrame()
     except Exception as e:
-        # Log any errors encountered during saving
-        logging.error(f"Error saving data to {filename}.csv: {str(e)}")
+        logging.error(f"Error merging indicators: {str(e)}")
+        return pd.DataFrame()
 
-# Function to fetch and save data for all indicators
-def fetch_all_indicators() -> Dict[str, pd.DataFrame]:
-    indicator_data = {}
-    # Loop through each indicator, fetch data, and save to CSV
-    for code, name in INDICATORS.items():
-        data = fetch_indicator_data(code, name)
-        if data is not None:
-            indicator_data[name] = data
-            # Save each indicator's data to a CSV file, adjusting filename format
-            save_to_csv(data, name.replace(" ", "_").replace("%", "percent"))
-    return indicator_data
+def save_to_csv(data: pd.DataFrame, filename: str):
+    """Save a DataFrame to a CSV file."""
+    path = os.path.join('data/external_factors', f"{filename}.csv")
+    data.to_csv(path, index=False)
+    logging.info(f"Data saved to {path}")
 
-# Main execution to fetch and save all indicators data when the script is run
 if __name__ == "__main__":
-    fetch_all_indicators()
+    os.makedirs('data/external_factors', exist_ok=True)
+    indicator_data = {}
+    for code, name in INDICATORS.items():
+        indicator_data[name] = fetch_indicator_data(code, name)
+
+    merged_data = merge_indicators(indicator_data)
+
+    if not merged_data.empty:
+        save_to_csv(merged_data, 'merged_indicators')
+    else:
+        logging.warning("No data available after merging indicators; no files were saved.")
