@@ -114,11 +114,14 @@ class BrentOilAnalysis:
         try:
             logging.info("Performing seasonality analysis.")
             decomposition = seasonal_decompose(series, model='additive', period=period)
+            
+            # Drop NaN values from each component
             result = {
-                'Trend': decomposition.trend,
-                'Seasonal': decomposition.seasonal,
-                'Residual': decomposition.resid
+                'Trend': decomposition.trend.dropna(),
+                'Seasonal': decomposition.seasonal.dropna(),
+                'Residual': decomposition.resid.dropna()
             }
+            
             logging.info("Seasonality analysis completed.")
             return result
         except Exception as e:
