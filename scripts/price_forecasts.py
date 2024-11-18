@@ -13,6 +13,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import matplotlib.pyplot as plt
 from pmdarima import auto_arima
+from datetime import timedelta
 
 # Create a logs directory if it doesn't exist
 if not os.path.exists('logs'):
@@ -36,6 +37,16 @@ class OilPriceAnalysis:
         Parameters:
         data (pd.DataFrame): DataFrame containing oil price data with a DateTimeIndex.
         """
+        # Ensure Date is in datetime format
+        if 'Date' not in data.columns:
+            raise ValueError("The dataset must have a 'Date' column.")
+        
+        data['Date'] = pd.to_datetime(data['Date'])
+        data.set_index('Date', inplace=True)
+
+        if not isinstance(data.index, pd.DatetimeIndex):
+            raise TypeError("Index must be a DateTimeIndex.")
+        
         self.data = data
         self.models = {}
         self.predictions = {}
@@ -170,7 +181,7 @@ class OilPriceAnalysis:
         except Exception as e:
             logging.error("Error fitting VAR model: %s", str(e))
 
-    def fit_lstm(self, seq_length=60, epochs=50, batch_size=32):
+    def fit_lstm(self, seq_length=60, epochs=50, batch_size=32, save_model_path="../models/lstm_model.h5"):
         try:
             X_train, y_train = self.create_sequences(self.scaled_train, seq_length)
             X_test, y_test = self.create_sequences(self.scaled_test, seq_length)
@@ -193,7 +204,11 @@ class OilPriceAnalysis:
 
             # Store the model
             self.models['lstm'] = model
-            
+
+            # Save the model
+            model.save(save_model_path)
+            logging.info(f"LSTM model saved to {save_model_path}")
+                
             # Generate predictions
             lstm_predictions = model.predict(X_test).reshape(-1)
             predictions_scaled = lstm_predictions.reshape(-1, 1)
@@ -297,3 +312,49 @@ class OilPriceAnalysis:
         except Exception as e:
             logging.error(f"Error plotting results: {str(e)}")
             print(f"Error: {str(e)}")
+
+    def forecast_future(self, seq_length=60, n_steps=360, save_path="../models/lstm_forecasted_prices.csv"):
+        """
+        Forecast future values using the trained LSTM model.
+
+        Parameters:
+        - seq_length: Length of the input sequence for prediction.
+        - n_steps: Number of steps to forecast into the future.
+        - save_path: File path to save the forecasted values.
+
+        Returns:
+        - A DataFrame with forecasted dates and values.
+        """
+        try:
+            # Use the last 'seq_length' data points to predict future
+            last_sequence = self.scaled_data[-seq_length:].reshape((1, seq_length, 1))
+            future_predictions = []
+
+            for _ in range(n_steps):
+                # Predict the next value
+                next_value = self.models['lstm'].predict(last_sequence)[0, 0]
+                future_predictions.append(next_value)
+
+                # Update the last sequence
+                last_sequence = np.append(last_sequence[:, 1:, :], [[[next_value]]], axis=1)
+
+            # Scale predictions back to the original range
+            future_predictions_scaled = np.array(future_predictions).reshape(-1, 1)
+            future_predictions_original = self.scaler.inverse_transform(future_predictions_scaled).flatten()
+
+            # Create a DataFrame with forecasted dates
+            last_date = self.data.index[-1]
+            forecast_dates = [last_date + timedelta(days=i) for i in range(1, n_steps + 1)]
+            forecast_df = pd.DataFrame({
+                "Date": forecast_dates,
+                "Forecasted_Price": future_predictions_original
+            })
+
+            # Save to CSV
+            forecast_df.to_csv(save_path, index=False)
+            logging.info(f"Forecast saved to {save_path}")
+            return forecast_df
+
+        except Exception as e:
+            logging.error(f"Error during forecasting: {str(e)}")
+            raise
