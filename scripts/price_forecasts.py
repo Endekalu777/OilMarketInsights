@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 # Create a logs directory if it doesn't exist
@@ -51,3 +52,25 @@ class OilPriceAnalysis:
             logging.info("Data prepared: train size = %d, test size = %d", len(self.train), len(self.test))
         except Exception as e:
             logging.error("Error in prepare_data: %s", str(e))
+
+    def create_sequences(self, data, seq_length):
+        """
+        Create sequences of data for LSTM models.
+
+        Parameters:
+        data (np.ndarray): Scaled data array.
+        seq_length (int): The sequence length for each input sequence.
+
+        Returns:
+        Tuple (np.ndarray, np.ndarray): Input (X) and output (y) sequences.
+        """
+        try:
+            X, y = [], []
+            for i in range(len(data) - seq_length):
+                X.append(data[i:(i + seq_length), 0])
+                y.append(data[i + seq_length, 0])
+            logging.info("Sequences created successfully.")
+            return np.array(X), np.array(y)
+        except Exception as e:
+            logging.error("Error creating sequences: %s", str(e))
+            return None, None
