@@ -1,71 +1,75 @@
+import os
+
+# Suppress TensorFlow oneDNN message and other logs
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import pandas as pd
 from flask import Flask, jsonify, request
-from flask_cors import CORS
-from models.OilPriceAnalysis import *
-from datetime import datetime, timedelta
-import warnings
-warnings.filterwarnings("ignore")
+from tensorflow.keras.models import load_model
+import numpy as np
+from tensorflow.keras.losses import MeanSquaredError
 
 app = Flask(__name__)
-CORS(app)
 
-# Initialize the OilPriceAnalysis class with your data
-analysis = OilPriceAnalysis(
-    'data/BrentOilPrices.csv',
-    'data/country_inflation_data/United_States_Inflation_Rate.csv',
-    'data/GDP/GDPUS.csv',
-    'data/unemployment_rate/United_States_Unemployment_Rate.csv'
-)
-analysis.preprocess_data()
+# Load the data
+historical_prices = pd.read_csv("data/BrentOilPrices.csv")
+forecast = pd.read_csv("data/lstm_forecasted_prices.csv")
+brent_indicators = pd.read_csv('data/Oil_indicators.csv')
 
-@app.route('/api/price-data', methods=['GET'])
-def get_price_data():
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
+# Load LSTM model
+lstm_model = load_model('data/lstm_model.h5', custom_objects={'mse': MeanSquaredError()})
+
+# Convert DataFrames to JSON-serializable format (list of dictionaries)
+historical_prices_json = historical_prices.to_dict(orient='records')
+forecast_json = forecast.to_dict(orient='records')
+
+# Selected features for training/prediction
+FEATURES = ['Returns', 'Volatility', 'MA_50', 'MA_200', 'Momentum', 'Log_Returns']
+
+@app.route('/api/historical-prices', methods=['GET'])
+def get_historical_prices():
+    return jsonify(historical_prices_json)
+
+@app.route('/api/forecast', methods=['GET'])
+def get_forecast():
+    return jsonify(forecast_json)
+
+@app.route('/api/indicators', methods=['GET'])
+def get_indicators():
+    return jsonify(brent_indicators.to_dict(orient='records'))
+
+@app.route('/api/predict', methods=['POST'])
+def predict():
+    """
+    Accepts a JSON payload with features for prediction:
+    {
+        "features": {
+            "Returns": value,
+            "Volatility": value,
+            "MA_50": value,
+            "MA_200": value,
+            "Momentum": value,
+            "Log_Returns": value
+        }
+    }
+    """
+    try:
+        # Extract features from request
+        features = request.json['features']
+        feature_values = [features[feature] for feature in FEATURES]
+
+        # Prepare data for LSTM model
+        input_data = np.array(feature_values).reshape(1, -1)  
+
+        # Predict price
+        prediction = lstm_model.predict(input_data).flatten()  
+
+        return jsonify({'predicted_price': prediction[0]})
+    except KeyError as e:
+        return jsonify({'error': f'Missing feature in request: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
-    try:
-        data = analysis.get_filtered_price_data("1987", "2022")
-        return jsonify({
-            'success': True,
-            'data': data.to_dict(orient='records')
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/dashboard-data', methods=['GET'])
-def get_dashboard_data():
-    try:
-        # Get date range from query parameters or use defaults
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)  # Default to 1 year of data
-        
-        if request.args.get('start_date'):
-            start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d')
-        if request.args.get('end_date'):
-            end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d')
-
-        # Get all required data
-        price_data = analysis.get_filtered_price_data(start_date, end_date)
-        metrics = analysis.calculate_metrics()
-        events = analysis.get_significant_events()
-        forecast = analysis.get_price_forecast()
-
-        return jsonify({
-            'success': True,
-            'data': {
-                'price_data': price_data.to_dict('records'),
-                'metrics': metrics,
-                'events': events,
-                'forecast': forecast
-            }
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

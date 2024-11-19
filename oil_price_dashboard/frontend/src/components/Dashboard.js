@@ -1,74 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import PriceChart from './PriceChart';
-import EventTimeline from './EventTimeline';
-import AnalyticsPanel from './AnalyticsPanel';
-import ModelResults from './ModelResults';
-import { fetchDashboardData, fetchModelAnalysis } from '../services/api';
-import { Box, Grid, Container, CircularProgress } from '@mui/material';
+import Chart from 'Chart';
+import Filters from './Filters';
 
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [modelResults, setModelResults] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
+  const [forecast, setForecast] = useState([]);
+  const [prices, setPrices] = useState([]);
+  const [indicators, setIndicators] = useState([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [dashboardResponse, modelResponse] = await Promise.all([
-          fetchDashboardData(dateRange.start, dateRange.end),
-          fetchModelAnalysis()
-        ]);
+    fetch('/api/forecast')
+      .then((res) => res.json())
+      .then(setForecast);
 
-        setDashboardData(dashboardResponse.data);
-        setModelResults(modelResponse.data);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetch('/api/prices')
+      .then((res) => res.json())
+      .then(setPrices);
 
-    loadData();
-  }, [dateRange]);
-
-  if (loading || !dashboardData) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
+    fetch('/api/indicators')
+      .then((res) => res.json())
+      .then(setIndicators);
+  }, []);
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ flexGrow: 1, mt: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <PriceChart 
-              priceData={dashboardData.price_data}
-              forecast={dashboardData.forecast}
-              events={dashboardData.events}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-          </Grid>
-          <Grid item xs={12} md={8}>
-            <EventTimeline events={dashboardData.events} />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <AnalyticsPanel metrics={dashboardData.metrics} />
-          </Grid>
-          <Grid item xs={12}>
-            <ModelResults results={modelResults} />
-          </Grid>
-        </Grid>
-      </Box>
-    </Container>
+    <div>
+      <h1>Brent Oil Price Dashboard</h1>
+      <Filters />
+      <Chart data={prices} title="Brent Oil Prices" />
+      <Chart data={forecast} title="LSTM Forecasted Prices" />
+      <Chart data={indicators} title="Oil Indicators" />
+    </div>
   );
 };
 
