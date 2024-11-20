@@ -1,0 +1,25 @@
+version: '3.12'
+services:
+  frontend:
+    build:
+      context: ./oil_price_dashboard/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./oil_price_dashboard/frontend:/app
+
+  backend:
+    build:
+      context: ./oil_price_dashboard/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./oil_price_dashboard/backend:/app
