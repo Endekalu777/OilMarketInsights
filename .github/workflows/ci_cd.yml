@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on: 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3  
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies for analysis scripts
+      run: |
+        pip install -r requirements.txt
+
+    - name: Install backend dependencies
+      working-directory: oil_price_dashboard/backend
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Backend Tests
+      working-directory: oil_price_dashboard/backend
+      run: |
+        pytest tests/
+
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Frontend Dependencies
+      working-directory: oil_price_dashboard/frontend
+      run: |
+        npm install
+
+    - name: Build Frontend
+      working-directory: oil_price_dashboard/frontend
+      run: |
+        npm run build
+
+    - name: Build Docker Image
+      run: |
+        docker build -t myrepo/oil_price_dashboard:latest -f oil_price_dashboard/backend/Dockerfile .
+
+    - name: Docker Compose Up
+      run: |
+        docker-compose up --build -d
