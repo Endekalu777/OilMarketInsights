@@ -10,6 +10,42 @@ This project provides an in-depth analysis and predictive modeling of Brent oil 
 - Machine learning for pattern recognition
 - Interactive dashboard visualization
 
+## Folder Strucutre
+
+```
+├── notebooks/                     # Jupyter notebooks for analysis and prototyping
+│   ├── EDA_event_analysis.ipynb   # Exploratory Data Analysis for events
+│   ├── Oil_price_analysis.ipynb   # Analysis of historical oil price data
+│   ├── pre_processor.ipynb        # Data preprocessing notebook
+│   ├── price_forecast.ipynb       # Notebook for forecasting prices
+│
+├── scripts/                       # Python scripts for backend processing and analysis
+│   ├── EDA_event_analysis.py      # EDA implementation script
+│   ├── Oil_price_analysis.py      # Script for oil price analysis
+│   ├── fetch_external_factors.py  # Script to retrieve external factors (e.g., economic indicators)
+│   ├── pre_processor.py           # Preprocessing logic for raw data
+│   ├── price_forecasts.py         # Forecasting models and predictions
+│   └── __init__.py  
+├──oil_price_dashboard/
+│   │
+│   ├── backend/                # Backend APIs built with Flask
+│   │   ├── app.py              # Main Flask app
+│   │   ├── models/             # Scripts for model training and inference
+│   │   ├── data/               # Datasets used for analysis
+│   │   ├── requirements.txt    # Python dependencies for the backend
+│   │   └── tests/              # Unit tests for the backend
+│   │
+│   ├── frontend/               # Frontend built with React
+│   │   ├── public/             # Static files for the frontend
+│   │   ├── src/                # Source code for the React app
+│   │   │   ├── components/     # React components (e.g., charts, filters)
+│   │   │   └── App.js          # Main React entry point
+│   │   └── package.json        # Node.js dependencies for the frontend
+│
+├── Dockerfile              # Docker configuration for containerization
+├── docker-compose.yml      # Docker Compose setup for the full stack
+└── README.md               # Documentation for the project
+```
 ## Key Features
 1. **Modeling Brent Oil Prices (Task1 branch)**
    - Time series models: ARIMA, GARCH
