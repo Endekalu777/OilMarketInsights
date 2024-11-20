@@ -26,8 +26,7 @@ jobs:
         pip install -r requirements.txt
 
     # Step 3: Run backend tests
-    - name: Run Backend Tests
-      working-directory: oil_price_dashboard/backend
+    - name: Run Tests
       run: |
         pytest tests/
 
