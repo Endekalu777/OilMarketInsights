@@ -1,65 +1,50 @@
 name: CI/CD Pipeline
 
-on: 
+on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3  
 
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Setup Python environment
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.12'
 
-    - name: Cache Python dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install dependencies for analysis scripts
+    - name: Install Python dependencies
       run: |
         pip install -r requirements.txt
 
-    - name: Install backend dependencies
-      working-directory: oil_price_dashboard/backend
-      run: |
-        pip install -r requirements.txt
-
+    # Step 3: Run backend tests
     - name: Run Backend Tests
       working-directory: oil_price_dashboard/backend
       run: |
         pytest tests/
 
-    - name: Install Node.js
+    # Step 4: Setup Node.js and build frontend
+    - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
 
-    - name: Install Frontend Dependencies
+    - name: Install and Build Frontend
       working-directory: oil_price_dashboard/frontend
       run: |
         npm install
-
-    - name: Build Frontend
-      working-directory: oil_price_dashboard/frontend
-      run: |
         npm run build
 
+    # Step 5: Build Docker image
     - name: Build Docker Image
       run: |
-        docker build -t myrepo/oil_price_dashboard:latest -f oil_price_dashboard/backend/Dockerfile .
+        docker build -t myrepo/oil_price_dashboard:latest .
 
-    - name: Docker Compose Up
-      run: |
-        docker-compose up --build -d

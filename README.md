@@ -44,7 +44,8 @@ This project provides an in-depth analysis and predictive modeling of Brent oil 
 │
 ├── Dockerfile              # Docker configuration for containerization
 ├── docker-compose.yml      # Docker Compose setup for the full stack
-└── README.md               # Documentation for the project
+├── README.md               # Documentation for the project
+└──requirements.txt
 ```
 ## Key Features
 1. **Modeling Brent Oil Prices (Task1 branch)**
